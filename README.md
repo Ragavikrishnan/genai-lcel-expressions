@@ -4,71 +4,89 @@
 To design and implement a LangChain Expression Language (LCEL) expression that utilizes at least two prompt parameters and three key components (prompt, model, and output parser), and to evaluate its functionality by analyzing relevant examples of its application in real-world scenarios.
 
 ### PROBLEM STATEMENT:
-Develop an LCEL-based application to process expressions with dynamic parameters, leveraging a prompt template for structured interaction, a language model to process the input, and an output parser for extracting meaningful results.
+To create and test a LangChain expression that connects a prompt, model, and output parser, and works with different inputs. The goal is to check how well it performs in simple and real-life scenarios.
 
 ### DESIGN STEPS:
 
 #### STEP 1:
-Create a prompt template with placeholders for at least two parameters.
+Import required libraries and add the API key for OPENAI.
 
-#### STEP 2:
-Use LangChain's language model to process the prompt and generate a response.
+### STEP 2:
+Choose the components: a prompt, a model, and an output parser.
 
-#### STEP 3:
-Implement an output parser to extract structured results from the model's response.
+### STEP 3:
+Create a simple or complex chain using these components.
+
+#### STEP 4:
+Provide input values and run the chain.
+
+### STEP 5: 
+Print the output.
 
 ### PROGRAM:
+
+SIMPLE CHAIN
 ```
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
+import os
+import openai
+
+from dotenv import load_dotenv, find_dotenv
+_ = load_dotenv(find_dotenv()) # read local .env file
+openai.api_key = os.environ['OPENAI_API_KEY']
+
+from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
-from langchain.output_parsers import ResponseSchema
 from langchain.schema.output_parser import StrOutputParser
 
-# Step 1: Define the PromptTemplate
-prompt = PromptTemplate(
-    template="""
-You are a restaurant assistant. Based on the following inputs, recommend a dish:
-- Cuisine preference: {cuisine}
-- Dietary restriction: {diet}
-
-Provide a response strictly in JSON format:
-{{
-    "dish": "<dish>",
-    "cuisine": "<cuisine>",
-    "diet": "<diet>"
-}}
-""",
-    input_variables=["cuisine", "diet"],
+prompt = ChatPromptTemplate.from_template(
+    "write {number} poems about {topic}"
 )
-
-# Step 2: Define the Output Parser
-response_schemas = [
-    ResponseSchema(name="dish", description="Recommended dish based on preferences"),
-    ResponseSchema(name="cuisine", description="Cuisine category of the recommended dish"),
-    ResponseSchema(name="diet", description="Dietary considerations for the dish"),
-]
+model = ChatOpenAI()
 output_parser = StrOutputParser()
 
-# Step 3: Initialize the Chat Model
-llm = ChatOpenAI(model="gpt-4-0613", temperature=0)
-
-# Step 4: Create the LangChain Expression (LLM Chain)
-chain = LLMChain(llm=llm, prompt=prompt, output_parser=output_parser)
-
-# Step 5: Test the Chain with Example Inputs
-input_data = {"cuisine": "Italian", "diet": "vegetarian"}
-result = chain.run(input_data)
-
-# Step 6: Parse the Structured Output
-parsed_result = output_parser.parse(result)
-
-# Step 7: Display the Final Recommendation
-print("Dish Recommendation:", parsed_result)
-
+chain = prompt | model | output_parser
+result = chain.invoke({"number": "2", "topic": "nature"})
+result
 ```
+
+COMPLEX CHAIN
+```
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import DocArrayInMemorySearch
+vectorstore = DocArrayInMemorySearch.from_texts(
+    ["John studies engineering", "John works three part-time jobs", "John watches TV shows in his free time"],
+    embedding=OpenAIEmbeddings()
+)
+retriever = vectorstore.as_retriever()
+retriever.get_relevant_documents("what does John study?")
+retriever.get_relevant_documents("How many part-time jobs does John work at?")
+template = """Answer the question based only on the following context:
+{context}
+
+Question: {question}
+"""
+prompt = ChatPromptTemplate.from_template(template)
+from langchain.schema.runnable import RunnableMap
+
+chain = RunnableMap({
+    "context": lambda x: retriever.get_relevant_documents(x["question"]),
+    "question": lambda x: x["question"]
+}) | prompt | model | output_parser
+
+chain.invoke({"question": "How many part-time jobs does John handle?"})
+
+chain.invoke({"question": "What is John's hobby?"})
+```
+
 ### OUTPUT:
-![image](https://github.com/user-attachments/assets/de402fe2-fa10-465c-bb86-b1e8ea972298)
+SIMPLE CHAIN
+
+![image](https://github.com/user-attachments/assets/141df776-19da-4f0b-b3c1-b70252d9cfbd)
+
+COMPLEX CHAIN
+
+![image](https://github.com/user-attachments/assets/d460f0d8-adb4-411d-8aa0-483bdd85bba7)
+
 
 ### RESULT:
-Hence,the program to design and implement a LangChain Expression Language (LCEL) expression that utilizes at least two prompt parameters and three key components (prompt, model, and output parser), and to evaluate its functionality by analyzing relevant examples of its application in real-world scenarios is written and successfully executed.
+Hence, a LangChain Expression Language (LCEL) expression that utilizes at least two prompt parameters and three key components (prompt, model, and output parser), and evaluate its functionality by analyzing relevant examples of its application in real-world scenarios is designed and implemented.
